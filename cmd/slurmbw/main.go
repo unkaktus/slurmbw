@@ -1,19 +1,20 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
-	"net"
 	"time"
 
 	"github.com/unkaktus/slurmbw"
 )
 
-// run with srun --pty -t 00:30:00 -p test -N 2 ./ib-speedtest
+// Build with `env GOOS=linux go build -v`
+// Run with `srun --pty -t 00:30:00 -p test -N 2 ./slurmbw“
 func run() error {
-	opa := true
+	network := flag.String("network", "udp4", "Network to use (tcp4, udp4, ...)")
+	omnipath := flag.Bool("omnipath", false, "Use OmniPath network (IPoIB)")
+	flag.Parse()
 
 	others, err := slurmbw.Others()
 	if err != nil {
@@ -31,12 +32,12 @@ func run() error {
 	log.Printf("my rank: %v", rank)
 	hostname, _ := slurmbw.GetHostname()
 
-	if opa {
+	if *omnipath {
 		hostname += "opa"
 	}
 
 	if rank == 0 {
-		err = slurmbw.Listen(hostname + ":4343")
+		err = slurmbw.Listen(*network, hostname+":4343")
 		if err != nil {
 			return fmt.Errorf("listen: %w", err)
 		}
@@ -46,16 +47,12 @@ func run() error {
 		if err != nil {
 			return fmt.Errorf("find node with rank 0: %w", err)
 		}
-		if opa {
+		if *omnipath {
 			rank0_nodename += "opa"
 		}
-		conn, err := net.Dial("tcp4", rank0_nodename+":4343")
+		err = slurmbw.Dial(*network, rank0_nodename+":4343")
 		if err != nil {
 			return fmt.Errorf("dial: %w", err)
-		}
-		_, err = io.Copy(ioutil.Discard, conn)
-		if err != nil {
-			return fmt.Errorf("copy: %w", err)
 		}
 	}
 

@@ -3,6 +3,8 @@ package slurmbw
 import (
 	"crypto/rand"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"time"
@@ -25,8 +27,8 @@ func handleConnection(conn net.Conn) {
 	}
 }
 
-func Listen(address string) error {
-	listener, err := net.Listen("tcp4", address)
+func Listen(network, address string) error {
+	listener, err := net.Listen(network, address)
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)
 	}
@@ -38,4 +40,16 @@ func Listen(address string) error {
 		}
 		go handleConnection(conn)
 	}
+}
+
+func Dial(network, address string) error {
+	conn, err := net.Dial(network, address)
+	if err != nil {
+		return fmt.Errorf("dial: %w", err)
+	}
+	_, err = io.Copy(ioutil.Discard, conn)
+	if err != nil {
+		return fmt.Errorf("copy: %w", err)
+	}
+	return nil
 }

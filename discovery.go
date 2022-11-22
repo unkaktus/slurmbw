@@ -23,24 +23,30 @@ func GetNodeList() (NodeList, error) {
 	if nodelist_string == "" {
 		return nil, fmt.Errorf("No SLURM_JOB_NODELIST set")
 	}
-	sp := strings.Split(nodelist_string, "[")
-	prefix := sp[0]
-	range_string := strings.Split(sp[1], "]")[0]
-
-	range_split := strings.Split(range_string, "-")
-	start, err := strconv.Atoi(range_split[0])
-	if err != nil {
-		return nil, fmt.Errorf("parse range start: %w", err)
-	}
-	stop, err := strconv.Atoi(range_split[1])
-	if err != nil {
-		return nil, fmt.Errorf("parse range start: %w", err)
-	}
+	log.Printf("nodelist: %s", nodelist_string)
 
 	nodelist := NodeList{}
-	for i := start; i <= stop; i++ {
-		nodename := fmt.Sprintf("%s%02d", prefix, i)
-		nodelist = append(nodelist, nodename)
+
+	comma_split := strings.Split(nodelist_string, ",")
+	for _, cs := range comma_split {
+		sp := strings.Split(cs, "[")
+		prefix := sp[0]
+		range_string := strings.Split(sp[1], "]")[0]
+
+		range_split := strings.Split(range_string, "-")
+		start, err := strconv.Atoi(range_split[0])
+		if err != nil {
+			return nil, fmt.Errorf("parse range start: %w", err)
+		}
+		stop, err := strconv.Atoi(range_split[1])
+		if err != nil {
+			return nil, fmt.Errorf("parse range start: %w", err)
+		}
+
+		for i := start; i <= stop; i++ {
+			nodename := fmt.Sprintf("%s%02d", prefix, i)
+			nodelist = append(nodelist, nodename)
+		}
 	}
 
 	return nodelist, nil
